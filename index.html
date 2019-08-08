@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script src="libs/pixi.min.js"></script>
+		<script src="libs/chc-pixi-utils.js"></script>
+		<script src="libs/ChcUtils.min.js"></script>
+		<script src="libs/TweenMax.min.js"></script>
+	</head>
+
+	<body>
+		<script>
+			var mathutil = new ChcUtils.MathUtil();
+			var ballArr = [];
+
+			const app = new PIXI.Application({
+				width: 800,
+				height: 600,
+				backgroundColor: 0x1099bb,
+				resolution: window.devicePixelRatio || 1,
+			});
+			document.body.appendChild(app.view);
+
+			const container = new PIXI.Container();
+
+			app.stage.addChild(container);
+
+			let bg = CdrawRect(800, 600, {
+				fillColor: '0x1099bb'
+			});
+			container.addChild(bg);
+			bg.interactive = true;
+
+			let yuan;
+			createYuan();
+
+			let draging = false;
+			let data;
+
+			bg.on('pointerdown', event => {
+				data = event.data;
+				draging = true;
+				setYuan(data);
+			});
+
+			bg.on('pointerup', () => {
+				draging = false;
+				if(yuan) {
+					TweenMax.to(yuan.scale, 0.3, {
+						x: 0.1,
+						y: 0.1,
+						onComplete: () => {
+							yuan.x = -100000;
+							yuan.y = 0;
+						}
+					});
+				}
+			});
+
+			bg.on('pointermove', event => {
+				if(draging) {
+					var newPosition = data.getLocalPosition(bg.parent);
+					yuan.x = newPosition.x;
+					yuan.y = newPosition.y;
+				}
+			});
+
+			for(var i = 0; i < 30; i++) {
+				for(var j = 0; j < 15; j++) {
+					var ball = createBall(i, j);
+					container.addChild(ball);
+					ballArr.push(ball);
+				}
+			}
+
+			let speed = 5;
+			let dir = 1;
+			let bigR;
+			let maxDis = 500;
+
+			function createBall(i) {
+				var ball = CdrawCircle(5, {
+					fillColor: '0xce00b8'
+				});
+				ball.x = 20 * i + 100;
+				ball.y = 20 * j + 150;
+				ball.initX = ball.x;
+				ball.initY = ball.y;
+				return ball;
+			}
+
+			function createYuan() {
+				var newPosition = {
+					x: -100000,
+					y: 0
+				};
+
+				yuan = CdrawCircle(30, {
+					fillColor: '0xc5cc52'
+				});
+				container.addChild(yuan);
+				yuan.x = newPosition.x;
+				yuan.y = newPosition.y;
+			}
+
+			function setYuan(data) {
+				var newPosition = data.getLocalPosition(bg.parent);
+
+				yuan.x = newPosition.x;
+				yuan.y = newPosition.y;
+				yuan.scale.set(0.1);
+				TweenMax.to(yuan.scale, 0.5, {
+					x: 1,
+					y: 1,
+					ease:Back.easeOut
+				});
+			}
+
+			app.ticker.add((delta) => {
+				bigR = yuan.width / 2 + 20;
+
+				for(var i = 0; i < ballArr.length; i++) {
+					var ball = ballArr[i];
+					test2(ball);
+				}
+			});
+
+			function test2(__ball) {
+				let newPosition = {};
+				let dis = mathutil.getDistance({
+					x: yuan.x,
+					y: yuan.y
+				}, {
+					x: __ball.x,
+					y: __ball.y
+				});
+
+				dis = Math.floor(dis);
+
+				var targetPosition = {};
+				var speed = 0;
+
+				if(dis <= bigR) {
+					var cangle = mathutil.getAngle({
+						x: yuan.x,
+						y: yuan.y
+					}, {
+						x: __ball.x,
+						y: __ball.y
+					});
+					cangle -= 90;
+					newPosition.x = Math.cos(cangle * Math.PI / 180) * bigR;
+					newPosition.y = Math.sin(cangle * Math.PI / 180) * bigR;
+
+					targetPosition.x = yuan.x + newPosition.x;
+					targetPosition.y = yuan.y + newPosition.y;
+					speed = 0.5;
+				} else {
+					targetPosition.x = __ball.initX;
+					targetPosition.y = __ball.initY;
+					speed = 0.05;
+				}
+				__ball.x += (targetPosition.x - __ball.x) * speed;
+				__ball.y += (targetPosition.y - __ball.y) * speed;
+			}
+		</script>
+	</body>
+
+</html>
